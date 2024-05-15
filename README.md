@@ -1,2 +1,3 @@
 # timetable
-A data structure for columns of type T where each row is associated with a row.
+
+A data structure for columns of `type Value any` where each row is associated with a `time.Time`

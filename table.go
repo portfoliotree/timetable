@@ -110,7 +110,7 @@ func (table *Compact[Value]) AddColumnFillMissingWithZero(list List[Value]) *Com
 	return table.AddColumn(list, zeroValue[Value])
 }
 
-func zeroValue[Value any](time.Time) Value {
+func zeroValue[Value any](time.Time, int) Value {
 	var zero Value
 	return zero
 }
@@ -128,7 +128,7 @@ func zeroTable[Value any](n int) *Compact[Value] {
 	}
 }
 
-func (table *Compact[Value]) AddColumn(list List[Value], missing func(time.Time) Value) *Compact[Value] {
+func (table *Compact[Value]) AddColumn(list List[Value], missing func(time.Time, int) Value) *Compact[Value] {
 	if table.isEmpty() {
 		return addInitialColumn(list)
 	}
@@ -163,7 +163,7 @@ func addInitialColumn[Value any](list List[Value]) *Compact[Value] {
 	return table
 }
 
-func (table *Compact[Value]) addAdditionalColumn(list List[Value], missing func(time.Time) Value) *Compact[Value] {
+func (table *Compact[Value]) addAdditionalColumn(list List[Value], missing func(time.Time, int) Value) *Compact[Value] {
 	var missingTimes []time.Time
 	for _, cell := range list {
 		_, found := slices.BinarySearchFunc(table.times, cell.time, time.Time.Compare)
@@ -188,7 +188,7 @@ func (table *Compact[Value]) addAdditionalColumn(list List[Value], missing func(
 			if found {
 				value = table.values[column][index]
 			} else {
-				value = missing(t)
+				value = missing(t, column)
 			}
 			values[column] = append(values[column], value)
 		}
@@ -199,7 +199,7 @@ func (table *Compact[Value]) addAdditionalColumn(list List[Value], missing func(
 		if found {
 			value = list[index].value
 		} else {
-			value = missing(t)
+			value = missing(t, len(table.values))
 		}
 		values[len(values)-1] = append(values[len(values)-1], value)
 	}

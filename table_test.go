@@ -1,7 +1,6 @@
 package timetable_test
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -208,96 +207,6 @@ func TestNew(t *testing.T) {
 			tt.Then(t, result)
 		})
 	}
-}
-
-func TestCompact_JSON(t *testing.T) {
-	emptyTable := new(Table)
-	emptyTable = emptyTable.AddColumnFillMissingWithZero(List{})
-
-	peach := timetable.New(List{
-		elV(day0, 1), elV(day1, 2), elV(day2, 3),
-	}, List{
-		elV(day0, 10), elV(day1, 20), elV(day2, 30),
-	})
-
-	t.Run("marshal", func(t *testing.T) {
-		for _, tt := range []struct {
-			Name     string
-			Table    *Table
-			Expected string
-		}{
-			{Name: "nil", Table: nil, Expected: `null`},
-			{Name: "zero", Table: new(Table), Expected: `{"times":null,"values":null}`},
-			{Name: "empty", Table: emptyTable, Expected: `{"times":[],"values":[[]]}`},
-			{Name: "some values", Table: peach,
-				// language=json
-				Expected: `{
-					"times":[
-						"2022-10-20T00:00:00Z",
-						"2022-10-21T00:00:00Z",
-						"2022-10-24T00:00:00Z"
-					],
-					"values":[
-						[1,2,3],
-						[10,20,30]
-					]
-				}`,
-			},
-		} {
-			t.Run(tt.Name, func(t *testing.T) {
-				data, err := json.Marshal(tt.Table)
-				assert.NoError(t, err)
-				assert.JSONEq(t, tt.Expected, string(data))
-			})
-		}
-	})
-
-	t.Run("unmarshal", func(t *testing.T) {
-		for _, tt := range []struct {
-			Name     string
-			JSON     string
-			Expected *Table
-		}{
-			{Name: "nil", Expected: nil, JSON: `null`},
-			{Name: "zero", Expected: new(Table), JSON: `{"times":null,"values":null}`},
-			{Name: "empty", Expected: emptyTable, JSON: `{"times":[],"values":[[]]}`},
-			{Name: "reverse order", Expected: peach,
-				// language=json
-				JSON: `{
-					"times":[
-						"2022-10-24T00:00:00Z",
-						"2022-10-21T00:00:00Z",
-						"2022-10-20T00:00:00Z"
-					],
-					"values":[
-						[3,2,1],
-						[30,20,10]
-					]
-				}`,
-			},
-			{Name: "in order", Expected: peach,
-				// language=json
-				JSON: `{
-					"times":[
-						"2022-10-20T00:00:00Z",
-						"2022-10-21T00:00:00Z",
-						"2022-10-24T00:00:00Z"
-					],
-					"values":[
-						[1,2,3],
-						[10,20,30]
-					]
-				}`,
-			},
-		} {
-			t.Run(tt.Name, func(t *testing.T) {
-				var got *Table
-				err := json.Unmarshal([]byte(tt.JSON), &got)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.Expected, got)
-			})
-		}
-	})
 }
 
 func TestCompact_Row(t *testing.T) {

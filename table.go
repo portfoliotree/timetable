@@ -1,7 +1,6 @@
 package timetable
 
 import (
-	"encoding/json"
 	"slices"
 	"sort"
 	"time"
@@ -18,20 +17,6 @@ func New[Value any](columns ...List[Value]) *Compact[Value] {
 		table = table.AddColumnFillMissingWithZero(column)
 	}
 	return table
-}
-
-type encodedCompact[Value any] struct {
-	Times  []time.Time `json:"times"  bson:"times"  yaml:"times"`
-	Values [][]Value   `json:"values" bson:"values" yaml:"values"`
-}
-
-func (table *Compact[Value]) UnmarshalJSON(buf []byte) error {
-	var enc encodedCompact[Value]
-	err := json.Unmarshal(buf, &enc)
-	table.times = enc.Times
-	table.values = enc.Values
-	table.sort()
-	return err
 }
 
 type sorter struct {
@@ -55,11 +40,6 @@ func (table *Compact[Value]) sort() {
 		},
 		len: len(table.times),
 	})
-}
-
-func (table *Compact[Value]) MarshalJSON() ([]byte, error) {
-	table.sort()
-	return json.Marshal(encodedCompact[Value]{Times: table.times, Values: table.values})
 }
 
 func (table *Compact[Value]) Times() []time.Time { return slices.Clone(table.times) }

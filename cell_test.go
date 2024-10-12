@@ -1,7 +1,6 @@
 package timetable_test
 
 import (
-	"encoding/json"
 	"log"
 	"testing"
 	"time"
@@ -57,64 +56,4 @@ func TestCell_GoString(t *testing.T) {
 	cell := elV(day0, 1)
 	const s = `timetable.Cell[int]{time: "2022-10-20 00:00:00 +0000 UTC", value: 1}`
 	assert.Equal(t, s, cell.GoString())
-}
-
-func TestCell_JSON(t *testing.T) {
-	emptyTable := new(Table)
-	emptyTable = emptyTable.AddColumnFillMissingWithZero(List{})
-
-	peach := List{
-		elV(day0, 1), elV(day1, 2), elV(day2, 3),
-	}
-
-	t.Run("marshal", func(t *testing.T) {
-		for _, tt := range []struct {
-			Name     string
-			List     List
-			Expected string
-		}{
-			{Name: "nil", List: nil, Expected: `null`},
-			{Name: "empty", List: List{}, Expected: `[]`},
-			{Name: "some values", List: peach,
-				// language=json
-				Expected: `[
-						{"time": "2022-10-20T00:00:00Z", "value": 1},
-						{"time": "2022-10-21T00:00:00Z", "value": 2},
-						{"time": "2022-10-24T00:00:00Z", "value": 3}
-					]`,
-			},
-		} {
-			t.Run(tt.Name, func(t *testing.T) {
-				data, err := json.Marshal(tt.List)
-				assert.NoError(t, err)
-				assert.JSONEq(t, tt.Expected, string(data))
-			})
-		}
-	})
-
-	t.Run("unmarshal", func(t *testing.T) {
-		for _, tt := range []struct {
-			Name     string
-			JSON     string
-			Expected List
-		}{
-			{Name: "nil", Expected: nil, JSON: `null`},
-			{Name: "empty", Expected: List{}, JSON: `[]`},
-			{Name: "some values", Expected: peach,
-				// language=json
-				JSON: `[
-						{"time": "2022-10-20T00:00:00Z", "value": 1},
-						{"time": "2022-10-21T00:00:00Z", "value": 2},
-						{"time": "2022-10-24T00:00:00Z", "value": 3}
-					]`,
-			},
-		} {
-			t.Run(tt.Name, func(t *testing.T) {
-				var got List
-				err := json.Unmarshal([]byte(tt.JSON), &got)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.Expected, got)
-			})
-		}
-	})
 }

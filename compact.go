@@ -2,7 +2,6 @@ package timetable
 
 import (
 	"slices"
-	"sort"
 	"time"
 )
 
@@ -17,29 +16,6 @@ func New[Value any](columns ...List[Value]) *Compact[Value] {
 		table = table.AddColumnFillMissingWithZero(column)
 	}
 	return table
-}
-
-type sorter struct {
-	less func(a, b int) bool
-	swap func(a, b int)
-	len  int
-}
-
-func (s sorter) Len() int           { return s.len }
-func (s sorter) Less(i, j int) bool { return s.less(i, j) }
-func (s sorter) Swap(i, j int)      { s.swap(i, j) }
-
-func (table *Compact[Value]) sort() {
-	sort.Sort(sorter{
-		less: func(a, b int) bool { return table.times[a].Before(table.times[b]) },
-		swap: func(a, b int) {
-			table.times[a], table.times[b] = table.times[b], table.times[a]
-			for i := range table.values {
-				table.values[i][a], table.values[i][b] = table.values[i][b], table.values[i][a]
-			}
-		},
-		len: len(table.times),
-	})
 }
 
 func (table *Compact[Value]) Times() []time.Time { return slices.Clone(table.times) }
@@ -133,7 +109,7 @@ func (table *Compact[Value]) AddColumn(list List[Value], missing func(time.Time,
 func addInitialColumn[Value any](list List[Value]) *Compact[Value] {
 	table := new(Compact[Value])
 	slices.SortFunc(list, Cell[Value].compareTimes)
-	newValues := make([]Value, 0, max(len(list), len(table.times)))
+	newValues := make([]Value, 0, len(list))
 	table.times = make([]time.Time, 0, len(list))
 	for _, element := range list {
 		table.times = append(table.times, element.time)
@@ -152,9 +128,7 @@ func (table *Compact[Value]) addAdditionalColumn(list List[Value], missing func(
 		}
 	}
 	times := slices.Grow(missingTimes, len(table.times)+len(missingTimes))
-	for _, t := range table.times {
-		times = append(times, t)
-	}
+	times = append(times, table.times...)
 	slices.SortFunc(times, time.Time.Compare)
 	times = slices.Compact(times)
 	values := make([][]Value, len(table.values)+1)
@@ -201,25 +175,22 @@ func (table *Compact[Value]) Between(t0, t1 time.Time) *Compact[Value] {
 		t0, t1 = t1, t0
 	}
 
-	var firstIndex, lastIndex int
 	list := table.times
-	if last := list[len(list)-1]; t0.After(last) {
+	last := list[len(list)-1]
+
+	var firstIndex, lastIndex int
+	if t0.After(last) {
 		firstIndex = len(list)
-	} else if first := list[0]; t0.Before(first) {
-		lastIndex = 0
-	} else if i, ok := slices.BinarySearchFunc(list, t0, time.Time.Compare); ok {
-		firstIndex = i
-	} else if i >= 0 && i < len(list) {
-		firstIndex = i
+	} else {
+		firstIndex, _ = slices.BinarySearchFunc(list, t0, time.Time.Compare)
 	}
 
-	if last := list[len(list)-1]; t1.After(last) {
+	switch i, ok := slices.BinarySearchFunc(list, t1, time.Time.Compare); {
+	case t1.After(last):
 		lastIndex = len(list)
-	} else if first := list[0]; t1.Before(first) {
-		lastIndex = 0
-	} else if i, ok := slices.BinarySearchFunc(list, t1, time.Time.Compare); ok {
+	case ok:
 		lastIndex = i + 1
-	} else if i >= 0 && i < len(list) {
+	default:
 		lastIndex = i
 	}
 

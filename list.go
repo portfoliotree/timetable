@@ -20,22 +20,21 @@ func (list List[Value]) Between(t0, t1 time.Time) List[Value] {
 		t0, t1 = t1, t0
 	}
 	slices.SortFunc(list, Cell[Value].compareTimes)
+	last := list[len(list)-1].time
 
-	firstIndex, lastIndex := 0, 0
-
-	if last := list[len(list)-1]; t0.After(last.time) {
+	var firstIndex, lastIndex int
+	if t0.After(last) {
 		firstIndex = len(list)
-	} else if i, ok := slices.BinarySearchFunc(list, Cell[Value]{time: t0}, Cell[Value].compareTimes); ok {
-		firstIndex = i
-	} else if i >= 0 && i < len(list) {
-		firstIndex = i
+	} else {
+		firstIndex, _ = slices.BinarySearchFunc(list, Cell[Value]{time: t0}, Cell[Value].compareTimes)
 	}
 
-	if last := list[len(list)-1]; t1.After(last.time) {
+	switch i, ok := slices.BinarySearchFunc(list, Cell[Value]{time: t1}, Cell[Value].compareTimes); {
+	case t1.After(last):
 		lastIndex = len(list)
-	} else if i, ok := slices.BinarySearchFunc(list, Cell[Value]{time: t1}, Cell[Value].compareTimes); ok {
+	case ok:
 		lastIndex = i + 1
-	} else if i >= 0 && i < len(list) {
+	default:
 		lastIndex = i
 	}
 
